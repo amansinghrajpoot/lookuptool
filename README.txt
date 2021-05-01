@@ -5,7 +5,7 @@ lookuptool.sh sf=employees.csv lf=data.lkp ifs=, lfs=, cols="6" skp=1 drp=0
           sf    ->  Data file location                 example: sf="/home/external/data.csv"       No default value
           lf    ->  Lookup file location               example: lf="/home/external/lookup.dat"     No default value
           ifs   ->  Input file field separator         example: ifs=|                              Default value = ,
-          lfs   ->  Lookup file field separator        example: ifs=|                              Default value = ,
+          lfs   ->  Lookup file field separator        example: lfs=|                              Default value = ,
           cols  ->  lookup key columns in input file   example: cols="2 3 5"                       No default value
           skp   ->  Number of rows to skip in          example: skp=1                              Default value = 0
                     input file (header)
