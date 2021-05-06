@@ -80,17 +80,22 @@ fi
 
 echo "+Skipping $skip row(s) in the source file"
 
-awk -F $ifs -v sk=$skip ' NR > $sk { print }'  $source_file > sourcedata1  #copying source data into a temp file
+awk -F $ifs -v sk=$skip ' NR > sk { print } '  $source_file >> sourcedata1  #copying source data into a temp file
 
 og_source=$source_file
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#code to check multifile.
 
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 echo "+Counting number of rows in data and lookup file"    #counting row in the input file and lookup file
 
-data_rows=`cat $source_file | wc -l`
-lkp_rows=`cat $lookup_file | wc -l`
+data_rows=`sed -n '=' $source_file | wc -l`
+lkp_rows=`sed -n '=' $lookup_file | wc -l`
 
 echo "+Total number of records in" `basename $og_source` "is $data_rows"
 echo "+Total number of records in" `basename $lookup_file` "is $lkp_rows"
@@ -129,7 +134,7 @@ i=1
 
 for val in "${keyarr[@]}";
 do
-echo "+Fetching keys from the data feed into the file >>>>>>>>>>>>> " `realpath keysnotfound${i}`  
+echo "+Fetching keys from the data feed into the file >>>>>>>>>>>>> " keysnotfound${i}
 awk -F $ifs -v col=$val -v sk=$skip ' { print $col; }'  $source_file > keysnotfound${i}
 i=$((i + 1))
 done
@@ -139,7 +144,7 @@ done
 #create temporary file for keys in lookup file
 
 for ((i = 1 ; i <= $no_of_keys ; i++)); do
-echo "+Fetching keys from the lookup feed into the file >>>>>>>>>>>>> " `realpath templookupfile${i}` 
+echo "+Fetching keys from the lookup feed into the file >>>>>>>>>>>>> " templookupfile${i}
 awk -F $lfs -v col=$i -v sk=$skip ' { print $col }'  $lookup_file  > templookupfile${i}
 done
 
@@ -149,9 +154,9 @@ done
 
 for ((i = 1 ; i <= $no_of_keys ; i++)); do
 
-grep -F -x -v -f keysnotfound${i} templookupfile${i} > keysnotfound${i}
+grep -F -x -v -f keysnotfound${i} templookupfile${i} > keysnotfound${i}   
 
-echo "+Filtering the keys in lookup for which data is not present in the data feed >>>>>>>> " `realpath keysnotfound${i}`
+echo "+Filtering the keys in lookup for which data is not present in the data feed >>>>>>>> " keysnotfound${i}
 
 done
 
@@ -170,8 +175,9 @@ echo "+Creating records for the filtered out keys "
 for val in "${keyarr[@]}";
 do
 
+
 count=0
-while read dataline <&3 && read keyline <&4; do     
+while read dataline <&3 && read keyline <&4; do    
            
           echo "$dataline" | awk -F $ifs -v col=$val -v line="$keyline" ' { $col=line; print $0 ;} ' OFS=$ifs >> sourcedata2
           
@@ -179,15 +185,18 @@ while read dataline <&3 && read keyline <&4; do
       
 done 3<sourcedata1 4<keysnotfound${i}
 
+
 cat sourcedata2 > sourcedata1
 true > sourcedata2
+
+
 
 i=$((i + 1))
 
 done
 
 
-cat sourcedata1 >> ${source_file}_output.csv
+cat sourcedata1 | sort | uniq >> ${source_file}_output.csv  # distinct records in output file
 
 count=$((count + skip + 1))
 
@@ -199,7 +208,7 @@ count=$((count + skip + 1))
 
 if [ $drop -eq 0 ]     
 then
-tail -n +${count} $og_source >> ${source_file}_output.csv
+tail -n +${count} $og_source | sort | uniq >> ${source_file}_output.csv # distinct records in output file
 fi
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -214,11 +223,12 @@ rm sourcedata*
 
 sed -i '/^$/d' ${source_file}_output.csv  #removing any blank line in output file
 
+
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
-echo "+All lookup keys updated in the file >>>>>>>> " `realpath ${source_file}_output.csv`
+echo "+All lookup keys updated in the file >>>>>>>> "  ${source_file}_output.csv
 
 
 
